@@ -35,6 +35,7 @@ the human player's own view.
 {
   "type": "STATE",
   "payload": {
+    "session_id": "1b1f7e6d8a2b4b6a9f7b6e3b6a9f7b6e",
     "street": "flop",
     "pot": 150,
     "community_cards": ["Ah", "Td", "7s"],

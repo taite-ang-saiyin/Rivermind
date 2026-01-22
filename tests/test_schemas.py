@@ -20,6 +20,11 @@ def test_client_message_call() -> None:
     assert message.amount is None
 
 
+def test_client_message_val_alias() -> None:
+    message = ClientMessage(type="MOVE", val="call")
+    assert message.action == ActionType.CALL
+
+
 def test_client_message_raise_requires_amount() -> None:
     with pytest.raises(ValidationError) as excinfo:
         ClientMessage(type="MOVE", action="raise")

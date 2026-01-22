@@ -50,7 +50,7 @@ class Action(BaseModel):
 
 class ClientMessage(BaseModel):
     type: str
-    action: ActionType
+    action: ActionType = Field(alias="val")
     amount: Optional[conint(ge=1)] = None
 
     @root_validator(skip_on_failure=True)
@@ -61,6 +61,9 @@ class ClientMessage(BaseModel):
         _validate_action_amount(values.get("action"), values.get("amount"))
         return values
 
+    class Config:
+        allow_population_by_field_name = True
+
 
 class ActionRecord(BaseModel):
     player_id: str
@@ -68,6 +71,7 @@ class ActionRecord(BaseModel):
 
 
 class GameStatePublic(BaseModel):
+    session_id: Optional[str] = None
     street: Street
     pot: conint(ge=0) = 0
     community_cards: List[str] = Field(default_factory=list)
