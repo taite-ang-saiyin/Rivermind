@@ -21,6 +21,7 @@ from .schemas import (
 from .ai.policy import get_ai_action
 from .session_store import SessionStore
 from .training.replay_buffer import ReplayBuffer
+from .member2.bucketing import compute_infoset_id
 
 
 configure_logging()
@@ -139,7 +140,7 @@ async def websocket_endpoint(websocket: WebSocket) -> None:
                 continue
 
             _record_experience(
-                replay_buffer, session.session_id, acting_player, action, action_street
+                replay_buffer, session.session_id, acting_player, action, action_street, session.engine
             )
 
             await _broadcast_update(session)
@@ -226,6 +227,7 @@ async def _run_ai_turns(session, buffer: Optional[ReplayBuffer]) -> None:
                 ai_player,
                 ai_action,
                 ai_street,
+                session.engine,
             )
             await _broadcast_update(session)
             actions_taken += 1
@@ -237,15 +239,37 @@ def _record_experience(
     player_id: str,
     action: Action,
     street: str,
+    engine,
 ) -> None:
     if buffer is None:
         return
+    
+    # Get state information for bucketing
+    hole_cards = engine.hole_cards.get(player_id, [])
+    board = list(engine.board)
+    action_history = engine.betting.action_history[:-1] if engine.betting.action_history else []  # Exclude current action
+    pot = engine.betting.pot
+    player_stack = engine.betting.stacks.get(player_id, 0)
+    big_blind = engine.betting.big_blind
+    
+    # Compute bucketed infoset ID
+    infoset_id = compute_infoset_id(
+        player_id=player_id,
+        hole_cards=hole_cards,
+        board=board,
+        street=street,
+        action_history=action_history,
+        pot=pot,
+        player_stack=player_stack,
+        big_blind=big_blind,
+    )
+    
     buffer.add(
         {
             "timestamp": time.time(),
             "street": street,
             "player_to_act": player_id,
-            "infoset_id": f"{session_id}:{street}:{player_id}",
+            "infoset_id": infoset_id,
             "action_taken": action.action.value,
             "amount": action.amount,
             "outcome": None,
